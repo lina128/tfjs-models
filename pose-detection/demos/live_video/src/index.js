@@ -16,6 +16,7 @@
  */
 
 import '@tensorflow/tfjs-backend-webgl';
+import '@mediapipe/pose';
 
 import * as tfjsWasm from '@tensorflow/tfjs-backend-wasm';
 
@@ -50,7 +51,8 @@ async function createDetector() {
     case posedetection.SupportedModels.MediapipeBlazepose:
       if (STATE.backend === 'mediapipe') {
         return posedetection.createDetector(
-            STATE.model, {quantBytes: 4, useSolution: true});
+            STATE.model,
+            {quantBytes: 4, useSolution: true, solutionPath: './', lite: true});
       }
       return posedetection.createDetector(STATE.model, {quantBytes: 4});
     case posedetection.SupportedModels.MoveNet:
@@ -122,7 +124,8 @@ async function renderResult() {
 
   const poses = await detector.estimatePoses(
       camera.video,
-      {maxPoses: STATE.modelConfig.maxPoses, flipHorizontal: false});
+      {maxPoses: STATE.modelConfig.maxPoses, flipHorizontal: false},
+      performance.now());
 
   endEstimatePosesStats();
 
