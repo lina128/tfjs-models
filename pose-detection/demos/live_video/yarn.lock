@@ -917,7 +917,7 @@
   resolved "https://registry.npmjs.org/@iarna/toml/-/toml-2.2.5.tgz#b32366c89b43c6f8cefbdefac778b9c828e3ba8c"
   integrity sha512-trnsAYxU3xnS1gPHPyU961coFyLkh4gAD/0zQ5mymY4yOZ+CYvsPqUbOFSw0aDM4y0tV7tiFxL/1XfXPNC6IPg==
 
-"@mediapipe/pose@0.3.x":
+"@mediapipe/pose@^0.3.1620249414":
   version "0.3.1620249414"
   resolved "https://registry.npmjs.org/@mediapipe/pose/-/pose-0.3.1620249414.tgz#ea4abc66aa4682e75f6d01f22becb190cc648c6b"
   integrity sha512-qfOgCiXyszKVr2ZTFQDiaH5jDu4XByQUfOsDG3N+PiNQ2UO3xo4hQqNg3Dim9xKTymOnQc8Wbe+C5SRci1xx7g==

@@ -112,17 +112,17 @@ export class MediapipeDetector extends BasePoseDetector {
   async estimatePoses(
       image: PoseDetectorInput, estimationConfig: MediapipeEstimationConfig,
       timestamp?: number): Promise<Pose[]> {
-    if (estimationConfig) {
-      if (estimationConfig.enableSmoothing !== this.smoothLandmarks ||
-          estimationConfig.flipHorizontal !== this.selfieMode) {
-        this.smoothLandmarks = estimationConfig.enableSmoothing;
-        this.selfieMode = estimationConfig.flipHorizontal;
-        this.poseSolution.setOptions({
-          smoothLandmarks: this.smoothLandmarks,
-          selfieMode: this.selfieMode,
-        });
-      }
-    }
+    // if (estimationConfig) {
+    //   if (estimationConfig.enableSmoothing !== this.smoothLandmarks ||
+    //       estimationConfig.flipHorizontal !== this.selfieMode) {
+    //     this.smoothLandmarks = estimationConfig.enableSmoothing;
+    //     this.selfieMode = estimationConfig.flipHorizontal;
+    //     this.poseSolution.setOptions({
+    //       smoothLandmarks: this.smoothLandmarks,
+    //       selfieMode: this.selfieMode,
+    //     });
+    //   }
+    // }
     if (!timestamp) {
       timestamp = 0.00001;
     }

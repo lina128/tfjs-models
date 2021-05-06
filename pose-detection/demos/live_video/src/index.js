@@ -132,8 +132,11 @@ async function renderResult() {
   beginEstimatePosesStats();
 
   const poses = await detector.estimatePoses(
-      camera.video,
-      {maxPoses: STATE.modelConfig.maxPoses, flipHorizontal: false},
+      camera.video, {
+        maxPoses: STATE.modelConfig.maxPoses,
+        flipHorizontal: false,
+        enableSmoothing: true
+      },
       performance.now());
 
   endEstimatePosesStats();
