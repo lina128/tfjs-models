@@ -37,6 +37,7 @@ let detector, camera, stats;
 let startInferenceTime, numInferences = 0;
 let inferenceTimeSum = 0, lastPanelUpdate = 0;
 let rafId;
+let lastTimestamp = 0;
 
 async function createDetector() {
   switch (STATE.model) {
@@ -52,7 +53,7 @@ async function createDetector() {
       if (STATE.backend === 'mediapipe') {
         return posedetection.createDetector(
             STATE.model,
-            {quantBytes: 4, useSolution: true, solutionPath: '', lite: true});
+            {quantBytes: 4, useSolution: true, solutionPath: './', lite: true});
       }
       return posedetection.createDetector(STATE.model, {quantBytes: 4});
     case posedetection.SupportedModels.MoveNet:
@@ -111,13 +112,21 @@ function endEstimatePosesStats() {
 }
 
 async function renderResult() {
-  if (video.readyState < 2) {
+  if (camera.video.readyState < 2) {
     await new Promise((resolve) => {
       camera.video.onloadeddata = () => {
-        resolve(video);
+        resolve(camera.video);
       };
     });
   }
+
+  const currentTime = Math.trunc(camera.video.currentTime * 1000);
+  if (currentTime === lastTimestamp) {
+    console.log('Same frame');
+    return;
+  }
+
+  lastTimestamp = currentTime;
 
   // FPS only counts the time it takes to finish estimatePoses.
   beginEstimatePosesStats();
@@ -129,6 +138,7 @@ async function renderResult() {
 
   endEstimatePosesStats();
 
+  camera.clearCtx();
   camera.drawCtx();
 
   // The null check makes sure the UI is not in the middle of changing to a

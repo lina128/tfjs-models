@@ -96,8 +96,8 @@ export const BLAZEPOSE_VISIBILITY_SMOOTHING_CONFIG = {
 };
 export const BLAZEPOSE_LANDMARKS_SMOOTHING_CONFIG = {
   velocityFilter: {
-    windowSize: 5,
-    velocityScale: 10,
+    windowSize: 10,
+    velocityScale: 1,
     minAllowedObjectScale: 1e-6,
     disableValueScaling: false
   }
