@@ -26,16 +26,12 @@ tfjsWasm.setWasmPaths(
 import * as posedetection from '@tensorflow-models/pose-detection';
 import * as tf from '@tensorflow/tfjs-core';
 
-import {Camera} from './camera';
+import {Context} from './camera';
 import {setupDatGui} from './option_panel';
 import {STATE} from './params';
-import {setupStats} from './stats_panel';
 import {setBackendAndEnvFlags} from './util';
 
-let detector, camera, stats;
-let startInferenceTime, numInferences = 0;
-let inferenceTimeSum = 0, lastPanelUpdate = 0;
-let rafId;
+let detector, camera;
 
 async function createDetector() {
   switch (STATE.model) {
@@ -48,7 +44,8 @@ async function createDetector() {
         multiplier: 0.75
       });
     case posedetection.SupportedModels.MediapipeBlazepose:
-      return posedetection.createDetector(STATE.model, {quantBytes: 4});
+      return posedetection.createDetector(
+          STATE.model, {quantBytes: 4, lite: false});
     case posedetection.SupportedModels.MoveNet:
       const modelType = STATE.modelConfig.type == 'lightning' ?
           posedetection.movenet.modelType.SINGLEPOSE_LIGHTNING :
@@ -58,23 +55,16 @@ async function createDetector() {
 }
 
 async function checkGuiUpdate() {
-  if (STATE.isTargetFPSChanged || STATE.isSizeOptionChanged) {
-    camera = await Camera.setupCamera(STATE.camera);
-    STATE.isTargetFPSChanged = false;
-    STATE.isSizeOptionChanged = false;
+  if (STATE.isModelChanged) {
+    detector.dispose();
+    detector = await createDetector(STATE.model);
+    STATE.isModelChanged = false;
   }
 
-  if (STATE.isModelChanged || STATE.isFlagChanged || STATE.isBackendChanged) {
+  if (STATE.isFlagChanged || STATE.isBackendChanged) {
     STATE.isModelChanged = true;
-
-    window.cancelAnimationFrame(rafId);
-
     detector.dispose();
-
-    if (STATE.isFlagChanged || STATE.isBackendChanged) {
-      await setBackendAndEnvFlags(STATE.flags, STATE.backend);
-    }
-
+    await setBackendAndEnvFlags(STATE.flags, STATE.backend);
     detector = await createDetector(STATE.model);
     STATE.isFlagChanged = false;
     STATE.isBackendChanged = false;
@@ -82,63 +72,55 @@ async function checkGuiUpdate() {
   }
 }
 
-function beginEstimatePosesStats() {
-  startInferenceTime = (performance || Date).now();
-}
-
-function endEstimatePosesStats() {
-  const endInferenceTime = (performance || Date).now();
-  inferenceTimeSum += endInferenceTime - startInferenceTime;
-  ++numInferences;
-
-  const panelUpdateMilliseconds = 1000;
-  if (endInferenceTime - lastPanelUpdate >= panelUpdateMilliseconds) {
-    const averageInferenceTime = inferenceTimeSum / numInferences;
-    inferenceTimeSum = 0;
-    numInferences = 0;
-    stats.customFpsPanel.update(
-        1000.0 / averageInferenceTime, 120 /* maxValue */);
-    lastPanelUpdate = endInferenceTime;
-  }
-}
-
-async function renderResult() {
-  if (video.readyState < 2) {
-    await new Promise((resolve) => {
-      camera.video.onloadeddata = () => {
-        resolve(video);
-      };
-    });
-  }
-
-  // FPS only counts the time it takes to finish estimatePoses.
-  beginEstimatePosesStats();
-
-  const poses = await detector.estimatePoses(
-      camera.video,
-      {maxPoses: STATE.modelConfig.maxPoses, flipHorizontal: false});
-
-  endEstimatePosesStats();
+async function renderResult(imgTensor) {
+  const poses = await detector.estimatePoses(imgTensor, {
+    maxPoses: STATE.modelConfig.maxPoses,
+    flipHorizontal: false,
+    enableSmoothing: false
+  });
 
   camera.drawCtx();
 
+  console.log(poses);
+
   // The null check makes sure the UI is not in the middle of changing to a
-  // different model. If during model change, the result is from an old model,
-  // which shouldn't be rendered.
+  // different model. If during model change, the result is from an old
+  // model, which shouldn't be rendered.
   if (poses.length > 0 && !STATE.isModelChanged) {
     camera.drawResults(poses);
   }
 }
 
-async function renderPrediction() {
+async function checkUpdate() {
   await checkGuiUpdate();
 
-  if (!STATE.isModelChanged) {
-    await renderResult();
-  }
-
-  rafId = requestAnimationFrame(renderPrediction);
+  requestAnimationFrame(checkUpdate);
 };
+
+async function updateVideo(event) {
+  const file = event.target.files[0];
+
+  const image = new Image();
+  image.src = URL.createObjectURL(file);
+  const parent = document.getElementById('canvas-wrapper');
+  parent.appendChild(image);
+  camera.setImage(image)
+}
+
+async function run() {
+  const canvas = document.createElement('canvas');
+  const parent = document.getElementById('canvas-wrapper');
+  parent.appendChild(canvas);
+  camera.setCanvas(canvas);
+  canvas.height = camera.image.height;
+  canvas.width = camera.image.width;
+
+  const imgTensor = tf.browser.fromPixels(camera.image);
+
+  for (let i = 0; i < 1; i++) {
+    await renderResult(imgTensor);
+  }
+}
 
 async function app() {
   await tf.setBackend(STATE.backend);
@@ -152,20 +134,16 @@ async function app() {
 
   await setupDatGui(urlParams);
 
-  stats = setupStats();
-
-  camera = await Camera.setupCamera(STATE.camera);
-
   detector = await createDetector();
+  camera = new Context();
 
-  // Warming up pipeline.
-  const warmUpTensor = tf.fill([camera.video.height, camera.video.width, 3], 0);
-  await detector.estimatePoses(
-      warmUpTensor,
-      {maxPoses: STATE.modelConfig.maxPoses, flipHorizontal: false});
-  warmUpTensor.dispose();
+  const runButton = document.getElementById('submit');
+  runButton.onclick = run;
 
-  renderPrediction();
+  const uploadButton = document.getElementById('videofile');
+  uploadButton.onchange = updateVideo;
+
+  checkUpdate();
 };
 
 app();

@@ -161,6 +161,8 @@ export class BlazeposeDetector extends BasePoseDetector {
 
     const imageSize = getImageSize(image);
     const image3d = tf.tidy(() => tf.cast(toImageTensor(image), 'float32'));
+    console.log('image is');
+    console.log(image3d.dataSync());
 
     let poseRect = this.regionOfInterest;
 
@@ -181,12 +183,15 @@ export class BlazeposeDetector extends BasePoseDetector {
       // used to detect landmarks.
       poseRect = this.poseDetectionToRoi(firstDetection, imageSize);
     }
+    console.log('poseRect is');
+    console.log(poseRect);
 
     // Detects pose landmarks within specified region of interest of the image.
     const poseLandmarks = await this.poseLandmarksByRoi(poseRect, image3d);
 
     image3d.dispose();
-
+    console.log('landmarks are');
+    console.log(poseLandmarks);
     if (poseLandmarks == null) {
       this.reset();
       return [];
