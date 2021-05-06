@@ -48,6 +48,10 @@ async function createDetector() {
         multiplier: 0.75
       });
     case posedetection.SupportedModels.MediapipeBlazepose:
+      if (STATE.backend === 'mediapipe') {
+        return posedetection.createDetector(
+            STATE.model, {quantBytes: 4, useSolution: true});
+      }
       return posedetection.createDetector(STATE.model, {quantBytes: 4});
     case posedetection.SupportedModels.MoveNet:
       const modelType = STATE.modelConfig.type == 'lightning' ?
@@ -72,7 +76,9 @@ async function checkGuiUpdate() {
     detector.dispose();
 
     if (STATE.isFlagChanged || STATE.isBackendChanged) {
-      await setBackendAndEnvFlags(STATE.flags, STATE.backend);
+      if (STATE.backend !== 'mediapipe') {
+        await setBackendAndEnvFlags(STATE.flags, STATE.backend);
+      }
     }
 
     detector = await createDetector(STATE.model);

@@ -83,11 +83,13 @@ export async function setupDatGui(urlParams) {
   modelFolder.open();
 
   const backendFolder = gui.addFolder('Backend');
-  const backendController =
-      backendFolder.add(params.STATE, 'backend', ['webgl', 'wasm']);
+  const backendController = backendFolder.add(
+      params.STATE, 'backend', ['webgl', 'wasm', 'mediapipe']);
   backendController.onChange(async backend => {
     params.STATE.isBackendChanged = true;
-    await showFlagSettings(backendFolder, backend);
+    if (backend !== 'mediapipe') {
+      await showFlagSettings(backendFolder, backend);
+    }
   });
   await showFlagSettings(backendFolder, params.STATE.backend);
 
