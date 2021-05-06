@@ -52,7 +52,7 @@ async function createDetector() {
       if (STATE.backend === 'mediapipe') {
         return posedetection.createDetector(
             STATE.model,
-            {quantBytes: 4, useSolution: true, solutionPath: './', lite: true});
+            {quantBytes: 4, useSolution: true, solutionPath: '', lite: true});
       }
       return posedetection.createDetector(STATE.model, {quantBytes: 4});
     case posedetection.SupportedModels.MoveNet:
