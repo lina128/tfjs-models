@@ -114,11 +114,15 @@ async function renderResult() {
   // FPS only counts the time it takes to finish estimatePoses.
   beginEstimatePosesStats();
 
-  const poses = await detector.estimatePoses(
+  const {poses, frame, aftermodel} = await detector.estimatePoses(
       camera.video,
       {maxPoses: STATE.modelConfig.maxPoses, flipHorizontal: false});
 
   endEstimatePosesStats();
+
+  const $frame = tf.squeeze(frame);
+  await tf.browser.toPixels($frame, camera.test);
+  camera.drawTest(aftermodel);
 
   camera.drawCtx();
 

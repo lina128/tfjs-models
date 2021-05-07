@@ -24,6 +24,8 @@ export class Camera {
     this.video = document.getElementById('video');
     this.canvas = document.getElementById('output');
     this.ctx = this.canvas.getContext('2d');
+    this.test = document.getElementById('test');
+    this.testCtx = this.test.getContext('2d');
   }
 
   /**

@@ -51,7 +51,8 @@ import {BlazeposeEstimationConfig, BlazeposeModelConfig} from './types';
 type PoseLandmarksByRoiResult = {
   actualLandmarks: Keypoint[],
   auxiliaryLandmarks: Keypoint[],
-  poseScore: number
+  poseScore: number,
+  imageTensor?: tf.Tensor4D
 };
 
 /**
@@ -140,12 +141,13 @@ export class BlazeposeDetector extends BasePoseDetector {
   // https://github.com/google/mediapipe/blob/master/mediapipe/modules/pose_landmark/pose_landmark_cpu.pbtxt
   async estimatePoses(
       image: PoseDetectorInput, estimationConfig: BlazeposeEstimationConfig,
-      timestamp?: number): Promise<Pose[]> {
+      timestamp?: number):
+      Promise<{poses: Pose[], frame: tf.Tensor4D, aftermodel: Keypoint[]}> {
     const config = validateEstimationConfig(estimationConfig);
 
     if (image == null) {
       this.reset();
-      return [];
+      return {poses: [], frame: null, aftermodel: []};
     }
 
     this.maxPoses = config.maxPoses;
@@ -171,7 +173,7 @@ export class BlazeposeDetector extends BasePoseDetector {
       if (detections.length === 0) {
         this.reset();
         image3d.dispose();
-        return [];
+        return {poses: [], frame: null, aftermodel: []};
       }
 
       // Gets the very first detection from PoseDetection.
@@ -189,10 +191,14 @@ export class BlazeposeDetector extends BasePoseDetector {
 
     if (poseLandmarks == null) {
       this.reset();
-      return [];
+      return {poses: [], frame: null, aftermodel: []};
     }
 
-    const {actualLandmarks, auxiliaryLandmarks, poseScore} = poseLandmarks;
+    const {actualLandmarks, auxiliaryLandmarks, poseScore, imageTensor: frame} =
+        poseLandmarks;
+    const aftermodel = actualLandmarks.map(lm => {
+      return {...lm};
+    });
 
     // Smoothes landmarks to reduce jitter.
     const {actualLandmarksFiltered, auxiliaryLandmarksFiltered} =
@@ -213,7 +219,7 @@ export class BlazeposeDetector extends BasePoseDetector {
         null;
     const pose: Pose = {score: poseScore, keypoints};
 
-    return [pose];
+    return {poses: [pose], frame, aftermodel};
   }
 
   dispose() {
@@ -394,9 +400,9 @@ export class BlazeposeDetector extends BasePoseDetector {
         constants.BLAZEPOSE_NUM_AUXILIARY_KEYPOINTS);
 
     tf.dispose(landmarkResult);
-    tf.dispose([imageTensor, imageValueShifted]);
+    tf.dispose([imageValueShifted]);
 
-    return {actualLandmarks, auxiliaryLandmarks, poseScore};
+    return {actualLandmarks, auxiliaryLandmarks, poseScore, imageTensor};
   }
 
   // Calculate region of interest (ROI) from landmarks.

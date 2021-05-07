@@ -14,10 +14,11 @@
  * limitations under the License.
  * =============================================================================
  */
+import * as tf from '@tensorflow/tfjs-core';
 import {BlazeposeEstimationConfig} from './blazepose/types';
 import {MoveNetEstimationConfig} from './movenet/types';
 import {PoseNetEstimationConfig} from './posenet/types';
-import {ModelConfig, Pose, PoseDetectorInput} from './types';
+import {Keypoint, ModelConfig, Pose, PoseDetectorInput} from './types';
 
 /**
  * User-facing interface for all pose detectors.
@@ -36,7 +37,8 @@ export interface PoseDetector {
       image: PoseDetectorInput,
       config?: PoseNetEstimationConfig|BlazeposeEstimationConfig|
       MoveNetEstimationConfig,
-      timestamp?: number): Promise<Pose[]>;
+      timestamp?: number):
+      Promise<{poses: Pose[], frame: tf.Tensor4D, aftermodel: Keypoint[]}>;
 
   /**
    * Dispose the underlying models from memory.
@@ -68,7 +70,8 @@ export abstract class BasePoseDetector implements PoseDetector {
       image: PoseDetectorInput,
       config?: PoseNetEstimationConfig|BlazeposeEstimationConfig|
       MoveNetEstimationConfig,
-      timestamp?: number): Promise<Pose[]>;
+      timestamp?: number):
+      Promise<{poses: Pose[], frame: tf.Tensor4D, aftermodel: Keypoint[]}>;
 
   abstract dispose(): void;
 
